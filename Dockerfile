@@ -40,13 +40,13 @@ RUN python3 -m venv gs-env && \
 
 # Compilación de submódulos
 WORKDIR /workspace/gaussian-splatting/submodules/simple-knn
-RUN . /workspace/gaussian-splatting/gs-env/bin/activate && python setup.py build_ext --inplace
+RUN . /workspace/gaussian-splatting/gs-env/bin/activate && python setup.py develop
 
 WORKDIR /workspace/gaussian-splatting/submodules/fused-ssim
-RUN . /workspace/gaussian-splatting/gs-env/bin/activate && python setup.py build_ext --inplace
+RUN . /workspace/gaussian-splatting/gs-env/bin/activate && python setup.py develop
 
 WORKDIR /workspace/gaussian-splatting/submodules/diff-gaussian-rasterization
-RUN . /workspace/gaussian-splatting/gs-env/bin/activate && python setup.py build_ext --inplace
+RUN . /workspace/gaussian-splatting/gs-env/bin/activate && python setup.py develop
 
 # Establecer el entorno para la ejecución
 ENV PATH="/workspace/gaussian-splatting/gs-env/bin:$PATH"
