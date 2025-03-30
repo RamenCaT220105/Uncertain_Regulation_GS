@@ -1,0 +1,4 @@
+# ninja log v5
+0	19663	1743279702129481642	/home/alumnolinux/Documentos/gaussian-splatting/submodules/simple-knn/build/temp.linux-x86_64-3.10/ext.o	be00aa7e248cd200
+0	31586	1743279714052334998	/home/alumnolinux/Documentos/gaussian-splatting/submodules/simple-knn/build/temp.linux-x86_64-3.10/simple_knn.o	2207af61367a40ad
+0	75841	1743279758300842147	/home/alumnolinux/Documentos/gaussian-splatting/submodules/simple-knn/build/temp.linux-x86_64-3.10/spatial.o	fd8ef27a9692c3c4
