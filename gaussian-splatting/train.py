@@ -13,7 +13,7 @@
 #MODIFICACIONES
 #FUNCION ERROR LINEA 136
 
-
+import csv
 import os
 import torch
 from random import randint
@@ -44,6 +44,9 @@ try:
     SPARSE_ADAM_AVAILABLE = True
 except:
     SPARSE_ADAM_AVAILABLE = False
+    
+uncertainty_log_path = "uncertainty_log.csv"
+lambda_log_path = "lambda_log.csv"
 
 def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoint_iterations, checkpoint, debug_from):
 
@@ -127,15 +130,21 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             ssim_value = fused_ssim(image.unsqueeze(0), gt_image.unsqueeze(0))
         else:
             ssim_value = ssim(image, gt_image)
-
+            
         # Calcular la incertidumbre en cada iteración
-        #uncertainty = gaussians.calculate_uncertainty()
-        #lambda_t = gaussians.calculate_lambda(uncertainty)
+        uncertainty = gaussians.calculate_uncertainty()
+        lambda_t_uncertain = gaussians.calculate_lambda(uncertainty)
 
-        lambda_t = 0.3
+        lambda_t = 0.3  
 
-        #loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim_value)
-        loss = (1.0 - lambda_t) * Ll1 + lambda_t * (1.0 - ssim_value) 
+            # Guardar en CSV
+            with open(uncertainty_log_path, mode='a', newline='') as file_u:
+                writer = csv.writer(file_u)
+                writer.writerow([iteration, uncertainty.item()])
+
+            with open(lambda_log_path, mode='a', newline='') as file_l:
+                writer = csv.writer(file_l)
+                writer.writerow([iteration, lambda_t_uncertain.item()])
 
         # Depth regularization
         Ll1depth_pure = 0.0
@@ -212,6 +221,17 @@ def prepare_output_and_logger(args):
     # Set up output folder
     print("Output folder: {}".format(args.model_path))
     os.makedirs(args.model_path, exist_ok = True)
+    
+    # Inicializar CSVs
+    with open("uncertainty_log.csv", mode='w', newline='') as file_u:
+        writer = csv.writer(file_u)
+        writer.writerow(["Iteration", "Uncertainty"])
+
+    with open("lambda_log.csv", mode='w', newline='') as file_l:
+        writer = csv.writer(file_l)
+        writer.writerow(["Iteration", "Lambda"])
+
+    
     with open(os.path.join(args.model_path, "cfg_args"), 'w') as cfg_log_f:
         cfg_log_f.write(str(Namespace(**vars(args))))
 
@@ -261,9 +281,6 @@ def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_i
         if tb_writer:
             tb_writer.add_histogram("scene/opacity_histogram", scene.gaussians.get_opacity, iteration)
             tb_writer.add_scalar('total_points', scene.gaussians.get_xyz.shape[0], iteration)
-
-            tb_writer.add_scalar('train_loss_patches/uncertainty', uncertainty.item(), iteration)
-            tb_writer.add_scalar('train_loss_patches/lambda', lambda_t.item(), iteration)
 
         torch.cuda.empty_cache()
 
