@@ -481,24 +481,32 @@ class GaussianModel:
         self.denom[update_filter] += 1
 
     def calculate_uncertainty(self):
-        scaling = self.get_scaling  # Obtener escalamiento (covarianza)
-        opacity = self.get_opacity  # Obtener opacidad
-        density_var = torch.var(self.get_xyz, dim=0)  # Varianza de densidad
+        scaling = self.get_scaling  # Escalamiento ≈ ||Σ||
+        opacity = self.get_opacity  # Opacidad α
+        xyz = self.get_xyz           # Coordenadas
 
         # Medias y desviaciones estándar
         mu_sigma = torch.mean(scaling)
         sigma_sigma = torch.std(scaling)
         mu_alpha = torch.mean(opacity)
         sigma_alpha = torch.std(opacity)
-        mu_rho = torch.mean(density_var)
-        sigma_rho = torch.std(density_var)
 
-        # Calcular la incertidumbre global
+        # La varianza global sobre los ejes XYZ
+        density_var = torch.var(xyz, dim=0).mean()  # <-- tomar la media de la varianza en x, y, z
+        mu_rho = density_var
+        sigma_rho = 1.0  # ⚡ Aquí asumimos que var(rho) fluctúa poco, por eso tomamos sigma_rho constante (=1). ⚡
+
+        eps = 1e-6  # Epsilon para evitar división por cero
+
+        # Cálculo de incertidumbre global U(t)
         uncertainty = (1 / scaling.shape[0]) * torch.sum(
-            ((scaling - mu_sigma) / sigma_sigma) +
-            ((1 - opacity) - mu_alpha) / sigma_alpha +
-            (density_var - mu_rho) / sigma_rho
+            ((scaling - mu_sigma) / (sigma_sigma + eps)) +
+            (((1 - opacity) - mu_alpha) / (sigma_alpha + eps)) +
+            ((density_var - mu_rho) / (sigma_rho + eps))
         )
+
         return uncertainty
+    
+    
     def calculate_lambda(self, uncertainty, gamma=1.0):
         return 1 - torch.exp(-gamma * uncertainty)
